@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 
 
 class Least_squares_regression():
+    """Least_squares_regressionp provides functionality to create and fit a polynomial regression model using the least squares method.
+      It allows users to generate sample data, construct polynomial models, fit them and predict values for new data."""
 
     def generate_model_points(self, N):
         # 100 points to graph a period of the true model
@@ -20,19 +22,24 @@ class Least_squares_regression():
             Phi.append([1] + [X[i]**j for j in range(1, degree+1)])
         return np.array(Phi)
 
+    # Fit the model using the least squares method to find the optimal weights
     def fit(self, Phi, y_train):
         self.w = np.dot(
             (np.dot(np.linalg.inv(np.dot(Phi.T, Phi)), Phi.T)), y_train)
         return self.w
 
+    # Predict the values of the model for new data using the trained weights
     def predict(self, Phi):
         return np.dot(Phi, self.w)
 
+    # Calculate the root mean squared error of the model
     def evaluate(self, y_pred, y_train):
         return np.sum((((y_pred - y_train)**2)/y_train.shape[0])**(1/2))
 
 
 def fit_and_evaluate_polynomials(X_train, y_train, regression_model):
+    """fit_and_evaluate_polynomials function can be used to fit
+    and evaluate polynomial models of varying degrees."""
     # Build the Phi matrix per polynomial degree
     per_polynomial_Phi = []
     for degree in [2, 3, 4, 5, 9]:
@@ -59,6 +66,7 @@ def fit_and_evaluate_polynomials(X_train, y_train, regression_model):
 
 
 def plot_fitted_models(X_train, y_train, per_polynomial_predictions, x, y):
+    """plot_fitted_models function plots the curves of the fitted polynomial models and the true model."""
     plt.figure(figsize=(10, 10))
     plt.title(
         f"Least squares fitted polynomial models of varying degrees vs the true model curve for a sample dataset of N = {X_train.shape[0]}", fontsize=14)

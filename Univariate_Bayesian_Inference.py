@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 
 
 class Univariate_Bayesian_Inference():
+    """Univariate_Bayesian_Inference contains methods for generating samples from a univariate normal distribution,
+        estimating the mean and variance of the posterior distribution 
+        and plotting the prior, generating, and posterior distributions."""
+
     def __init__(self, prior_mean, prior_var, generating_mean, generating_var):
         self.prior_mean = prior_mean
         self.prior_var = prior_var
@@ -12,6 +16,7 @@ class Univariate_Bayesian_Inference():
     # Since we dont want to caputre specifically evenly separated points as the points in self.generative_x below ,
     # we utilizie the numpy random.normal function
     def generating_distribution_sampling(self, draws):
+        # draws is the number of samples we want to generate
         generated_samples = np.random.normal(
             self.generating_mean, (self.generating_var)**(1/2), size=draws)
         return generated_samples
@@ -20,6 +25,7 @@ class Univariate_Bayesian_Inference():
     # their corresponding density based on the Gaussian function
     def generative_distribution_points(self):
         generative_sigma = (self.generating_var)**(1/2)
+        # We use 100 observation/target pairs to plot the pdf
         self.generative_x = np.linspace(
             self.generating_mean - 3*generative_sigma, self.generating_mean + 3*generative_sigma, 100)
         self.generative_y = 1/(np.sqrt(2*np.pi)*generative_sigma)*np.exp(-(
@@ -78,7 +84,6 @@ class Univariate_Bayesian_Inference():
                    color="tab:orange", label="Estimated mean", linewidth=1.5, alpha=0.8)
         # Misc settings
         plt.legend(fontsize=11)
-        # Somehow the y-axis drifts away from 0, so we limit it to 0,4 the same as the ticks
         plt.ylim(0, 4)
         plt.ylabel("Density", fontsize=14)
         plt.xlabel("x", fontsize=14)
