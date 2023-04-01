@@ -1,41 +1,41 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 class Least_squares_regression():
-    """Least_squares_regressionp provides functionality to create and fit a polynomial regression model using the least squares method.
+    """Least_squares_regressionp rovides functionality to create and fit a polynomial regression model using the least squares method.
       It allows users to generate sample data, construct polynomial models, fit them and predict values for new data."""
-
-    def generate_model_points(self, N):
+    def generate_model_points(self,N,evenly_spaced=True):
         # 100 points to graph a period of the true model
-        x_generating = np.linspace(0, 1, 100)
+        x_generating = np.linspace(0,1,100)
         y_generating = np.sin(2*np.pi*x_generating)
-        # generating model with sample of size N predictions + noise
-        X_train = np.linspace(0, 1, N)
-        y_train = np.sin(2*np.pi*X_train) + np.random.normal(0, 1, N)
+        #generating model with sample of size N predictions + noise 
+        if evenly_spaced:
+            X_train = np.linspace(0,1,N)
+            y_train = np.sin(2*np.pi*X_train) + np.random.normal(0,1,N)
+        else:
+            X_train = np.random.uniform(0,1,N)
+            y_train = np.sin(2*np.pi*X_train) + np.random.normal(0,1,N)
         return X_train, y_train, x_generating, y_generating
-
-    def polynomial_model_constructor(self, X, degree):
-        Phi = []
+    
+    def polynomial_model_constructor(self,X,degree):
+        Phi =[]
         for i in range(X.shape[0]):
-            # Create the structure of the model, based on the polynomial degree using a list comprehension
-            Phi.append([1] + [X[i]**j for j in range(1, degree+1)])
+            #Create the structure of the model, based on the polynomial degree using a list comprehension
+            Phi.append([1] + [X[i]**j for j in range(1,degree+1)])
         return np.array(Phi)
 
-    # Fit the model using the least squares method to find the optimal weights
-    def fit(self, Phi, y_train):
-        self.w = np.dot(
-            (np.dot(np.linalg.inv(np.dot(Phi.T, Phi)), Phi.T)), y_train)
+    #Fit the model using the least squares method to find the optimal weights
+    def fit(self,Phi,y_train):
+        self.w = np.dot((np.dot(np.linalg.inv(np.dot(Phi.T, Phi)), Phi.T)), y_train)
         return self.w
 
-    # Predict the values of the model for new data using the trained weights
-    def predict(self, Phi):
+    #Predict the values of the model for new data using the trained weights
+    def predict(self,Phi):
         return np.dot(Phi, self.w)
 
-    # Calculate the root mean squared error of the model
-    def evaluate(self, y_pred, y_train):
+    #Calculate the root mean squared error of the model
+    def evaluate(self,y_pred,y_train):
         return np.sum((((y_pred - y_train)**2)/y_train.shape[0])**(1/2))
-
 
 def fit_and_evaluate_polynomials(X_train, y_train, regression_model):
     """fit_and_evaluate_polynomials function can be used to fit
