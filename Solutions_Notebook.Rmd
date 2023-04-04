@@ -1,0 +1,205 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+# Required libraries
+library(ggplot2)
+library(gridExtra)
+```
+
+# **Problem 1: Multivariate normal, MLE proof**
+
+**Let** $\{x_1,...,x_N\}$ be $Ν$ random vectors following a multidimensional Normal distribution. Assuming that the covariance matrix is known, derive analytically the Maximum Likelihood Estimate $\mu_{ML}$ for the distribution's mean.
+
+## *Solution*
+
+We have $N$ random vectors $X = \{\vec{x_1},...,\vec{x_n}\}$ following a Normal multidimensional distribution $N(\vec{\mu},\Sigma)$, where the covariance matrix $\Sigma$ is known and we want to get the best point estimate for the parameter vector for the mean (since we are talking about a multidimensional normal) of the distribution $\vec{\mu}$ given the sample $X$, without utilizing any prior information. Following Bayes's rule: $$p(\vec{\mu}|X) = \frac{p(X|\vec{\mu})p(\vec{\mu})}{p(X)} \ \ (1)$$ where:
+
+-   $p(\vec{\mu}|X)$ is the posterior pdf of $\vec{\mu}$ given the sample vectors $X$
+
+-   $p(X|\vec{\mu})$ is the likelihood, which corresponds to the normal pdf that is most likely to have generated the sample data $X$ given the mean $\vec{\mu}$.
+
+-   $p(\vec{\mu})$ is our prior belief in the form of the pdf of the mean $\vec{\mu}$ $P(X) = \int P(X|\mu)P(\mu)$ is a marginal probability not dependent on $\vec{\mu}$ that scales the posterior so that $\int p(\vec{\mu}|X) = 1$ and does not affect its shape.
+
+Since we are interested in finding the pdf's maximum optima with respect to $\mu$, the point estimate where the partial derivative is 0, we are only concerned with the shape of the pdf. Thus the posterior is proportional to the likelihood multiplied with the prior: $$(1) \implies  p(\vec{\mu}|X) \propto p(X|\vec{\mu})p(\vec{\mu}) $$ Since we are interested in a point estimate of the mean $\vec{\mu}$ without taking into account any prior beliefs, we can try to approximately maximize the posterior by maximizing only the likelihood in equation $(1)$ with respect to $\mu$. \\ \\ Thus we need to find $\vec{\mu_{ML}} = argmax_\mu p(X|\vec{\mu})$: $$p(X|\vec{\mu}) =\prod_{i=1}^Np(\vec{x_i}|\vec{\mu})$$ Additionally since maximizing a function is the same as maximizing the logarithm of said function (because the logarithm is a monotonic function): $$\ln p(X|\vec{\mu}) = \ln(\prod_{i=1}^Np(\vec{x_i}|\vec{\mu})) = \sum_{i=1}^N\ln p(\vec{x_i}|\vec{\mu})  = \sum_{i=1}^N \ln (\frac{1}{(2\pi)^{\frac{D}{2}}|\Sigma|^{\frac{1}{2}}} exp(-\frac{1}{2} (\vec{x}_i-\vec{\mu})^T \Sigma^{-1}(\vec{x}_i-\vec{\mu})))$$ Since we are interested in maximizing $\mu$, the term before the exponential can be written as a constant $C$, since it does not contain the $\mu$ parameter, thus: $$\implies \sum_{i=1}^N( \ln C -\frac{1}{2}(\vec{x}_i-\vec{\mu})^T \Sigma^{-1}(\vec{x}_i-\vec{\mu})) = N\ln C -\frac{1}{2} \sum_{i=1}^N((\vec{x}_i-\vec{\mu})^T \Sigma^{-1}(\vec{x}_i-\vec{\mu}))$$ Taking the partial derivative with respect to $\mu$ and using the differentiation rule: $\frac{d(\vec{\theta}^TA\vec{\theta})}{d(\vec{\theta})}=2A\vec{\theta}$ $$\implies \frac{\partial{\ln p(X|\vec{\mu})}}{\partial{\vec{\mu}}} = 0 - \frac{2}{2}\Sigma^{-1}\sum_{i=1}^N(x_i - \vec{\mu}) = -\Sigma^{-1}\sum_{i=1}^N x_i + \Sigma^{-1}N\vec{\mu}$$ setting the derivative to zero to find the maxima of $\vec{\mu}$ we get: $$\implies \Sigma^{-1}N\vec{\mu} = \Sigma^{-1}\sum_{i=1}^N x_i \implies \vec{\mu}_{ML} = \frac{1}{N}\sum_{i=1}^N x_i $$
+
+------------------------------------------------------------------------
+
+# **Problem 2: Binomial mean and variance formulas proof**
+
+## *Solution*
+
+The binomial distribution probability mass function is given by: $$Bin(m|N,\mu) =  {N \choose m}\mu^m(1-\mu)^{N-m}= \frac{N!}{(N-m)!m!}\mu^m(1-\mu)^{N-m}$$ It's a way to model the probability that $m$ successes will occur in $N$ independent Bernoulli success-failure trials, where the probability of success is $\mu$ and its the same across all trials. For a single Bernoulli trial, its probability mass function is $Bern(x|\mu) = \mu^x(1-\mu)^{1-x}$, thus: $$E[x] = \sum_{x\in\{0,1\}}x Bern(x|\mu) =  \sum_{x\in\{0,1\}}x \mu^x(1-\mu)^{1-x} = 0 + \mu = \mu$$ $$V[x] = E[x^2]-E[x]^2 = \sum_{x\in\{0,1\}}x^2 \mu^x(1-\mu)^{1-x} - (\sum_{x\in\{0,1\}}x \mu^x(1-\mu)^{1-x})^2 = \mu - \mu^2 = {\mu(1-\mu)}$$ Thus for $N$ subsequent independent Bernoulli trials of which the Binomial consists of, its expected value and variance is equal to the sum of the expected values, variances of each independent Bernoulli trial:
+
+$$E[m] = \sum^N_{i=1}E[x_i] = \sum^N_{i=1}\sum_{x_i\in\{0,1\}}x_i\mu^x_i(1-\mu)^{1-x_i} = N\mu$$ $$V[m] =  \sum^N_{i=1}V[x_i] = \sum^N_{i=1}(\sum_{x\in\{0,1\}}x_i^2 \mu^{x_i}(1-\mu)^{1-x_i} - (\sum_{x\in\{0,1\}}x_i \mu^x_i(1-\mu)^{1-x_i})^2) = N\mu(1-\mu)$$
+
+# **Problem 3: Bayesian Inference, univariate Gaussian with unknown mean**
+
+## **Problem 3.1: Mean and variance of the posterior proof**
+
+**Prove the the formulas for the mean and variance of the posterior are:** $\mu_N =\frac{N\sigma_0^2\bar{x}+\sigma^2\mu_0}{N\sigma_0^2 + \sigma^2}$, $\sigma^2_N = \frac{\sigma^2\sigma^2_0}{N \sigma^2_0 +\sigma^2}$
+
+### *Solution*
+
+we know that the posterior distribution is given by: $$p(\mu|X) \propto p(X|\mu)p(\mu)$$ where $p(\mu|X)$ is the posterior distribution, $p(X|\mu)$ is the likelihood and $p(\mu)$ is the prior distribution. And: $$p(X|\mu) = \frac{1}{\sqrt{2\pi\sigma^2}}exp(-\frac{\sum^N_{i=1}(x_i-\mu)^2}{2\sigma^2})$$ $$p(\mu) = \frac{1}{\sqrt{2\pi\sigma_0^2}}exp(-\frac{(\mu-\mu_0)^2}{2\sigma_0^2})$$ The posterior is proportional to their product, thus: $$p(\mu|X) \propto \frac{1}{2\pi\sigma^2\sigma_0^2}exp(-\frac{\sum^N_{i=1}(x_i-\mu)^2}{2\sigma^2} -\frac{(\mu-\mu_0)^2}{2\sigma_0^2}) = \frac{1}{2\pi\sigma^2\sigma_0^2}exp(-\frac{\sigma^2_0\sum^N_{i=1}(x_i-\mu)^2- \sigma^2(\mu-\mu_0)^2}{2\sigma^2\sigma^2_0})$$ $$= \frac{1}{2\pi\sigma^2\sigma_0^2}exp(\frac{- \sigma^2_0\sum^N_{i=1}x^2_i + 2\sigma^2_0\mu\sum^N_{i=1}x_i - \sigma^2_0\mu^2N - \sigma^2\mu^2 + 2\mu\mu_0\sigma^2 - \sigma^2\mu^2_0}{2\sigma^2\sigma^2_0})$$ $$=  \frac{1}{2\pi\sigma^2\sigma_0^2}exp(\frac{(-\sigma^2_0\mu^2_0 + \sigma^2_0\sum^N_{i=1}x^2_i) +2\mu(\sigma^2_0\sum^N_{i=1}x_i + \mu_0\sigma^2) - \mu^2(\sigma^2_0N + \sigma^2 )}{2\sigma^2\sigma^2_0})$$ In the denominator we have a form $a\mu^2 - 2b\mu + c$, where c is a constant, to begin the procces of completing the square we devide by $a$: $$\frac{1}{2\pi\sigma^2\sigma_0^2}exp(\frac{-(\mu^2 - \frac{2\mu(\sigma^2_0\sum^N_{i=1}x_i + \mu_0\sigma^2)}{\sigma^2_0N + \sigma^2 } + \frac{(\sigma^2_0\mu^2_0 + \sigma^2_0\sum^N_{i=1}x^2_i)}{\sigma^2_0N + \sigma^2 })}{\frac{2\sigma^2\sigma^2_0}{\sigma^2_0N + \sigma^2}})$$ And then add and subtract $\frac{b^2}{a^2}$ to get: $$\frac{1}{2\pi\sigma^2\sigma_0^2}exp(\frac{-(\mu^2 - \frac{2\mu(\sigma^2_0\sum^N_{i=1}x_i + \mu_0\sigma^2)}{\sigma^2_0N + \sigma^2 } + \frac{(\sigma^2_0\mu^2_0 + \sigma^2_0\sum^N_{i=1}x^2_i) +}{\sigma^2_0N + \sigma^2 } + \frac{(\sigma^2_0\sum^N_{i=1}x_i + \mu_0\sigma^2)^2}{(\sigma^2_0N + \sigma^2)^2} -  \frac{(\sigma^2_0\sum^N_{i=1}x_i + \mu_0\sigma^2)^2}{(\sigma^2_0N + \sigma^2)^2}}{\frac{2\sigma^2\sigma^2_0}{\sigma^2_0N + \sigma^2}})$$ $$ = \frac{1}{2\pi\sigma^2\sigma_0^2}exp(-\frac{1}{2} \frac{(\mu - \frac{\sigma^2_0\sum^N_{i=1}x_i + \mu_0\sigma^2}{\sigma^2_0N + \sigma^2})^2 + \frac{(\sigma^2_0\mu^2_0 + \sigma^2_0\sum^N_{i=1}x^2_i) }{\sigma^2_0N + \sigma^2 }-\frac{(\sigma^2_0\sum^N_{i=1}x_i + \mu_0\sigma^2)^2}{(\sigma^2_0N + \sigma^2)^2} }{\frac{\sigma^2\sigma^2_0}{\sigma^2_0N + \sigma^2}}) $$ $$ =\frac{1}{2\pi\sigma^2\sigma_0^2}exp(-\frac{1}{2} \frac{(\mu - \frac{\sigma^2_0\sum^N_{i=1}x_i + \mu_0\sigma^2}{\sigma^2_0N + \sigma^2})^2}{\frac{\sigma^2\sigma^2_0}{\sigma^2_0N + \sigma^2}}  + \text{Constant not dependent on $\mu$})$$
+
+Thus the posterior has the form of a Gaussian distribution with mean $\mu_N =\frac{\sigma^2_0\sum^N_{i=1}x_i + \mu_0\sigma^2}{\sigma^2_0N + \sigma^2} = \frac{N\sigma_0^2\bar{x}+ \sigma^2\mu_0}{N\sigma_0^2 + \sigma^2}$ and variance $\sigma^2_N = \frac{\sigma^2\sigma^2_0}{N\sigma^2_0 + \sigma^2}$
+
+## **Problem 3.2: Bayesian Inference of the unknown posterior mean (code)**
+
+**Consider now that** $x$ follows the distribution $x\simΝ(μ,16)$, and as Bayesians, we assume a prior for the mean $\mu \sim Ν(0,4)$. Use the distribution $Ν(7,16)$ to generate $N$ observations for $x$
+
+-   **a) Develop an algorithm that estimates the mean and variance of the posterior distribution , assuming we have available a dataset of** $N = 1, 5, 10, 20, 50, 100, 1000$ observations, respectively. What do you observe as the number of observations $N$ is increasing?
+
+-   **b) For every value of** $N$, provide a diagram that shows the prior distribution, the distribution generating the data, and the estimated posterior distribution. Clearly label the axes of your diagrams.
+
+### *Solution*
+
+From 3.1 we have derived that:
+
+-   The mean of the posterior distribution $p(\mu|X)$, is given by: $$\mu_N =\frac{N\sigma_0^2\bar{x}+ \sigma^2\mu_0}{N\sigma_0^2 + \sigma^2} \ \ (1)$$
+
+-   The variance is given by: $$\sigma^2_N = \frac{\sigma^2\sigma^2_0}{N\sigma^2_0 + \sigma^2} \ \ (2)$$
+
+Our goal is to develop a method that estimates the mean and variance of the posterior, given a dataset of observations and then plots a diagram of: - The prior distribution - The generating distribution - The estimated posterior distribution
+
+All distributions refer to univariate normals of form: $$p(x|\mu,\sigma^2) = \frac{1}{\sqrt{2\pi\sigma^2}}exp(-\frac{(x-\mu)^2}{2\sigma^2})$$
+
+In order to achieve this goal we create two functions `generate_points` and `map_estimation`:
+
+-   `generate_points` takes as arguments the mean and variance of a Gaussian distribution and allows us to pick observations inside the of the distribution using the rule that $99.7\%$ of the total observations lie from the mean up to 3 standard deviations away, then find their target on y-axis using the univariate normal formula.
+
+-   `map_estimation` takes as arguments the data sample, and the prior, generating parameters to utilize the equations (1), (2) we proved in 3.1 to estimate the mean and variance of the posterior based on the given sample
+
+```{r}
+# Allows for the generation of the data points
+generate_points <- function(mean, variance) {
+  sigma <- sqrt(variance)
+  x <- seq(mean - 3 * sigma, mean + 3 * sigma, by = 0.01)
+  y <- 1 /(sqrt(2 * pi) * sigma) * exp(-1 / 2 * (x - mean)^2 / variance)
+  return(data.frame(x, y))
+}
+
+map_estimation <- function(
+    samples,
+    prior_mu,
+    prior_var,
+    generating_mu,
+    generating_var) {
+  N <- length(samples)
+  x_bar <- mean(samples)
+  # Derived equation 1
+  posterior_mu <- (prior_mu / prior_var^2 + N * x_bar /
+    generating_var^2) / (1 / prior_var^2 + N / generating_var^2)
+  # Derived equation 2
+  posterior_var <- 1 / (1 / prior_var^2 + N / generating_var^2)
+  return(list(mu = posterior_mu, var = posterior_var))
+}
+```
+
+Finally, we sample $i \in [1, 5, 10, 20, 50, 100, 1000]$ data points each time from the generating distribution $N(7,16)$, utilizing `rnorm(i, mean = 7, sd = 4)`, and estimate the posterior mean and variance for each $i$ sample with $map_estimation$. We then use `generate_points` to get x and y points for each distributions by passing their respective parameters and plot these points.
+
+-   The prior distribution is colored green
+
+-   The generative distribution blue
+
+-   The posterior distribution orange
+
+```{r,fig.width=9 , fig.height=6 , dpi=150}
+#Seed for reproducability
+set.seed(42)
+for (i in c(1, 5, 10, 20, 50, 100, 1000)) {
+  samples <- rnorm(i, mean = 7, sd = 4)
+  posterior_stats <- map_estimation(samples, 0, 2, 7, 4)
+  posterior_mu <- posterior_stats$mu
+  posterior_var <- posterior_stats$var
+
+  # Create the dataframes for plotting with ggplot2
+  generating_points_df <- generate_points(mean = 7, variance = 16)
+  prior_points_df <- generate_points(mean = 0, variance = 4)
+  posterior_points_df <- generate_points(mean = posterior_mu, variance = posterior_var)
+
+  # Plot the distributions and their means for each sample
+  figure <- ggplot() +
+    geom_line(
+      data = generating_points_df,
+      aes(x = x, y = y),
+      color = "#5454f0", size = 1.5
+    ) + geom_label(label = "Generating") +
+    geom_line(
+      data = prior_points_df,
+      aes(x = x, y = y),
+      color = "#27b132", size = 1.5
+    ) +
+    geom_line(
+      data = posterior_points_df,
+      aes(x = x, y = y),
+      color = "#d1981d", size = 1.5
+    ) +
+    geom_point(
+      data = data.frame(x = samples, y = rep(0, i)),
+      aes(x = x, y = y), color = "#720d09", size = 1
+    ) +
+    geom_vline(xintercept = 7, linetype="dotted", color ="#5454f0", size = 1) +
+    geom_vline(xintercept = 0, linetype="dotted", color ="#27b132", size = 1) +
+    geom_vline(xintercept = posterior_mu, linetype="dotted", color ="#d1981d", size = 1) +
+    ylim(0,1.75) + 
+    xlim(-8,20) +
+    labs(title = paste("Maximum a posteriori estimation of posterior probability of the mean given samples: N =", i), x = 'X', y = 'Density', color = "Legend") +
+    scale_color_manual(values = c("#5454f0", "#27b132", "#d1981d", "#720d09"),
+                     labels = c("Generating", "Prior", "Posterior", "Samples")) +
+    theme(legend.position = "bottom") 
+  plot(figure)
+}
+```
+
+### **Discussion**
+
+Looking at the equations that give us the mean and variance of the posterior, $\mu_N =\frac{N\sigma_0^2\bar{x}+ \sigma^2\mu_0}{N\sigma_0^2 + \sigma^2}$, and $\sigma^2_N = \frac{\sigma^2\sigma^2_0}{N\sigma^2_0 + \sigma^2}$ respectively, its evident that and considering our prior beliefs $N \sim (0,4)$ compared to the true generating distribution $X \sim (7,16)$ the reason behind this observation is clear:\
+
+1.  We begin by a false prior belief for the mean $\mu_{prior}=0$, not close the true generating distribution mean $\mu_{generating}=7$, with certainty modeled by the prior variance $\sigma^2_{prior} = 4$
+
+2.  Additionally from the equations: $\mu_N =\frac{N\sigma_0^2\bar{x}+ \sigma^2\mu_0}{N\sigma_0^2 + \sigma^2}$, and $\sigma^2_N = \frac{\sigma^2\sigma^2_0}{N\sigma^2_0 + \sigma^2}$, we see that:
+
+3.  For $N=0 \rightarrow \mu_N = \mu_{0}$ and $\sigma_N = \sigma_0$, so we pay full attention to the prior 2. For $N != 0 \rightarrow \mu_N = \mu_N =\frac{N\sigma_0^2\bar{x}+ \sigma^2\mu_0}{N\sigma_0^2 + \sigma^2}$, and $\sigma^2_N = \frac{\sigma^2\sigma^2_0}{N\sigma^2_0 + \sigma^2}$, the (estimated in real problems) generating distribution parameters come into play.
+
+-   If $\sigma^2 << \sigma^2_{prior}$, we pay more attention to the (in actual problems, estimated based on the observations) generating distribution rather than the prior.
+
+-   If $\sigma^2 >> \sigma^2_{prior}$, the opposite is true
+
+4.  If $N$ tends to $\infty$, then $\mu_N = \mu_{generating}$ and $\sigma^2_N = 0$, that means that the estimation of the posterior is based solely on the observed data and matches the generating $\mu$ parameter
+
+Thus as you can notice in the plots above since $\sigma^2 > \sigma^2_{prior}$, for low number of samples we are estimating the posterior mean $\mu_N$ close to the false prior mean $\mu_prior$. But as $N$ increases sufficiently (concerning the complexity of the problem), the estimated posterior mean tends to move away from the prior and reaches the generating mean $\mu_{generating}$, with ever decreasing estimation uncertainty $\sigma^2_N$, finally at $N=1000$, we have a case similar to 3. above, where $\mu_N \approx \mu_{generating}$ and $\sigma^2_N \approx 0$
+
+# **Problem 4: Polynomial Regression**
+
+Draw a period of the sinusoidal function $y(x)=sin(2πx)$ and select $N$ samples for $x$ uniformly distributed in the interval $[0,1]$. To every $y(x)$ add Gaussian noise distributed as $Ν(0,1)$ to generate a data set of noisy observations. Fit to the noisy observations a polynomial model of degree $M=2,3,4,5,9$ and provide a table with the coefficients of the best least-squares fit model and the achieved RMSE. Also, provide a plot showing the function $y(x)$, the observations drawn, and the best fit model for every value of M. Repeat the above procedure for two values of $N=10$ and $N=100$. What do you observe? Discuss your findings.
+
+## *Solution*
+
+The true model is of the form $y(x)=sin(2πx)$ and the generating model is $t = sin(2\pi x) + \eta$, where $\eta \sim Ν(0,1)$.
+
+We wish to perform regression and estimate the polynomial model that best fits the true model using the Least Squares method and evaluating the root mean squared error (RMSE) Below we build a class called `Least_squares_regression` with methods that will carry out these tasks. 1. `generate_model_points` generates the targets $y$ for an $X$ sample of size $N$, evenly distributed between $[0,1]$. We manage that by using `np.linspace(0,1,N)` to draw $N$ evenly seperated samples in the described range and then using the generating model $y(x)$ to generate the targets for the sample observations. Additionally with the same logic we draw 100 points to plot the true shape of the curve using the true model $y(x)$ without noise. 2. We are itrested in creating various polynomial models to fit and evaluate, for this reason we code the method `polynomial_model_constructor` which creates a matrix of form $$\Phi = \begin{bmatrix}  1 & x_1 & x_1^2 & x_1^3   &  \dots  \\ 1 & x_2 & x_2^2 & x_2^3  & \dots  \\ \vdots & \vdots & \vdots & \vdots  & \vdots \\ 1 & x_n & x_n^2 & x_n^3 & \dots  \end{bmatrix}$$ that has as many rows as our $X$ sample sizes and as many columns as the polynomial degree of choice + 1 for the bias term. This allows us to write all possible polynomials of choice in the form \$Y = \vec{w}\Phi \$ where the weight vector $\vec{w}$, is a column vector of rows = columns of $\Phi$ 3. In order to `fit` the constructed polynomial model we utilize the the least squares error estimation method for generalized linear regression(since the model is linear on the parametes in the $\vec{w}$) $$\vec{w_{LS}}=(\Phi^T \Phi)^{-1}\Phi^T\vec{y}$$ 4. Having fitted the model we can `predict` via our model structure with the trained weight vector $\vec{y_{pred}} = \Phi\vec{w_{LS}}$ 5. Finally we can `evaluate` the performance of our fitted model by finding the root mean squared error (RMSE) of our predictions $\vec{y_{pred}}$ vs the true values $\vec{y_{true}}$: $$(RMSE) = \sqrt{\frac{1}{N} \sum_{i=1}^{N} ({y_{i_{pred}}}-{y_{i_{true}}})^2}$$
+
+```{r}
+generate_model_points <- function(N,evenly_spaced = True){
+    x_generating = seq(0, 1, 0.01)
+    y_generating = sin(2* pi * x_generating)
+    if (evenly_spaced){
+      X_train = seq(0,1,N)
+      y_train = sin(2*pi*X_train) + rnorm(N, 0, 1)
+    }
+    else
+      {
+      X_train = runif(N, 0, 1)
+      y_train = sin(2*pi*X_train) + rnorm(N, 0, 1)  
+      }
+    return
+  }
+```
+
+```{r}
+
+```
