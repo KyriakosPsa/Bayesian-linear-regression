@@ -1,0 +1,237 @@
+---
+title: 'Assignment 1: R code notebook'
+output:
+  word_document: 
+  html_document:
+    df_print: paged
+---
+
+# Required libraries
+
+```{r}
+# Required libraries
+library(ggplot2)
+library(tidyr)
+```
+
+# **R code for Problem 3**
+
+-   `generate_points` takes as arguments the mean and variance of a Gaussian distribution and allows us to pick observations inside the of the distribution using the rule that $99.7\%$ of the total observations lie from the mean up to 3 standard deviations away, then find their target on y-axis using the univariate normal formula.
+
+-   `map_estimation` takes as arguments the data sample, and the prior, generating parameters to utilize the equations we proved in 3.1 (see python jupyter notebook) to estimate the mean and variance of the posterior based on the given sample.
+
+```{r}
+# Allows for the generation of the data points
+generate_points <- function(mean, variance) {
+  sigma <- sqrt(variance)
+  x <- array(seq(mean - 3 * sigma, mean + 3 * sigma, by = 0.01))
+  y <- array(1 /(sqrt(2 * pi) * sigma) * exp(-1 / 2 * (x - mean)^2 / variance))
+  return(data.frame(x, y))
+}
+
+map_estimation <- function(
+    samples,
+    prior_mu,
+    prior_var,
+    generating_mu,
+    generating_var) {
+  N <- length(samples)
+  x_bar <- mean(samples)
+  # Derived equation 1
+  posterior_mu <- (prior_mu / prior_var^2 + N * x_bar /
+    generating_var^2) / (1 / prior_var^2 + N / generating_var^2)
+  # Derived equation 2
+  posterior_var <- 1 / (1 / prior_var^2 + N / generating_var^2)
+  return(list(mu = posterior_mu, var = posterior_var))
+}
+```
+
+Finally, we sample 1, 5, 10, 20, 50, 100, 1000 data points each time from the generating distribution N(7,16), utilizing `rnorm(i, mean = 7, sd = 4)`, and estimate the posterior mean and variance for each sample with `map_estimation$`. We then use `generate_points` to get x and y points for each distributions by passing their respective parameters and plot these points.
+
+```{r,fig.width=9 , fig.height=6 , dpi=150}
+#Seed for reproducability
+set.seed(42)
+for (i in c(1, 5, 10, 20, 50, 100, 1000)) {
+  samples <- rnorm(i, mean = 7, sd = 4)
+  posterior_stats <- map_estimation(samples, 0, 2, 7, 4)
+  posterior_mu <- posterior_stats$mu
+  posterior_var <- posterior_stats$var
+  
+  # Create the data-frames for plotting with ggplot2
+  generating_points_df <- generate_points(mean = 7, variance = 16)
+  prior_points_df <- generate_points(mean = 0, variance = 4)
+  posterior_points_df <- generate_points(mean = posterior_mu, variance = posterior_var)
+  
+  # Plot the distributions and their means for each sample
+  figure <- ggplot() +
+    geom_line(
+      data = generating_points_df,
+      aes(x = x, y = y, color = "Generating Distribution"), size = 1.5,
+    ) +
+    geom_line(
+      data = prior_points_df,
+      aes(x = x, y = y, color = "Prior Distribution"), size = 1.5,
+    ) +
+    geom_line(
+      data = posterior_points_df,
+      aes(x = x, y = y, color = "Posterior Distribution"), size = 1.5,
+    ) +
+    geom_point(
+      data = data.frame(x = samples, y = rep(0, i)),
+      aes(x = x, y = y,color = "Sample"), size = 1,
+    ) +
+    geom_vline(xintercept = 7, linetype="dotted", color ="darkred", size = 1) +
+    geom_vline(xintercept = 0, linetype="dotted", color ="darkblue", size = 1,) +
+    geom_vline(xintercept = posterior_mu, linetype="dotted", color ="darkgreen", size = 1) +
+    ylim(0,1.75) + 
+    xlim(-8,20) +
+    labs(title = paste("Maximum a posteriori estimation of posterior probability of the mean given samples: N =", i), x = 'X', y = 'Density', color = "Legend")
+  print(figure)
+}
+```
+
+# **R code for Problem 4**
+
+-   `generate_model_points`, generates points with the true model using the true structure `sin(2* pi * x)`. Additionally depending on the boolean value of `evenly_spaced` TRUE/FALSE , it generates also N points with the generating model (true model structure + Gaussian noise with mean 0 and variance 1: `rnorm(N, 0, 1)` ).
+
+-   `polynomial_model_constructor` takes as arguments a sample X, as well as the degree of the polynomial model we wish to construct. It then creates `Phi` a matrix which in each row has each of the observation in X in polynomial form plus 1 term for the bias(see python jupyter notebook for the representation).
+
+-   `fit` utilize the least squares method in matrix form to find the optimal weights/coeficcients.
+
+-   `predict` returns the dot product of the `Phi` matrix and the trained weights, thus predictions
+
+-   `evaluate` finally utilizes the RMSE to calculate the root mean squared error between the predicted values and the true values
+
+```{r}
+generate_model_points <- function(N, evenly_spaced = TRUE) {
+  x_generating <- array(seq(0, 1,length.out = N))
+  y_generating <-  array(sin(2 * pi * x_generating))
+  
+  if (evenly_spaced == TRUE) {
+    X_train <-  array(seq(0, 1, length.out = N))
+    y_train <-  array(sin(2 * pi * X_train) + rnorm(N, 0, 1))
+  } else {
+    X_train <-  array(runif(N, 0, 1))
+    y_train <-  array(sin(2 * pi * X_train) + rnorm(N, 0, 1))
+  }
+  return(data.frame(X = X_train, Y = y_train, x = x_generating, y = y_generating))
+}
+
+polynomial_model_constructor <- function(X, degree){
+  Phi <- matrix(0, nrow = length(X), ncol = degree + 1)
+  for (i in 1:length(X)) {
+    #Make the first column 1 for the bias term
+    Phi[i,1] <- 1
+    #Add to each column the corresponding degree of X
+    Phi[i,2:(degree + 1)] <- X[i]^(1:degree)
+  }
+  return(Phi)
+}
+
+fit <- function(Phi, y_train) {
+  w <- solve(t(Phi) %*% Phi) %*% t(Phi) %*% y_train
+  return(array(w))
+}
+
+
+predict <- function(Phi, w) {
+  return(Phi %*% w)
+}
+
+
+evaluate <- function(y_pred, y_train) {
+  return(array(sqrt(sum(((y_pred - y_train)^2) / length(y_train))))) 
+}
+```
+
+Having coded the functions we will need we create two for loops, one to iterate throught the generating sample sizes `10,100` and another one nested, to construct, fit and evaluate each polynomial model of degree `c(2,3,4,5,9)`. Specifically: 1. We generate the sample points based on the sample size via `generate_model_points` 2. We construct the Phi matrix of these points via the `polynomial_model_constructor` 3. We fit the model using least squared and the target training set with `fit` 4. Having trained the weights we utilize `predict` to find the predicted target vector 5. We then evaluate the polynomials based on their RMSE with `evaluate` 6. Finally we print the `training sample size, polynomial degree, RMSE and coeficients` for each polynomial model in a dataframe and plot each model vs the true model along with the sample training points
+
+```{r,fig.width=9 , fig.height=6 , dpi=300}
+
+for (sample_size in c(10,100)){
+  for (degree in c(2,3,4,5,9)){
+    set.seed(42)
+    model_points <- generate_model_points(sample_size,evenly_spaced = TRUE)
+    Phi <- polynomial_model_constructor(model_points$X, degree)
+    w_trained <- fit(Phi,model_points$Y)
+    y_pred <- predict(Phi,w_trained)
+    RMSE <- evaluate(y_pred,model_points$Y)
+    # Print the tabulated coeficients for each polynomial degree along with training sample size, polynomial degree, RMSE
+    print(data.frame( sample_size = sample_size, Polynomial_degree = degree, RMSE = RMSE, Coeficient = t(w_trained)))
+    
+  # plot the polynomial models vs the true model
+  figure <- ggplot() + 
+   geom_line(data = data.frame(x = model_points$X, y = y_pred), 
+            aes(x = x, y = y, color = "Polynomial model"),  size = 1
+  ) +
+  geom_line(data = data.frame(x = model_points$x, y = model_points$y), 
+            aes(x = x, y = y, color = "True model sin(2πx)"), size = 1
+  ) +
+  geom_point(data = data.frame(x = model_points$X, y = model_points$Y), 
+            aes(x = x, y = y, color = "Training set"),  size = 1
+  ) +
+  xlim(0,1) +
+  ylim(-3,3)+
+  labs(y = ("Targets")) +
+  ggtitle(paste("Polynomial model of degree:",degree,", sample size:",sample_size))
+  print(figure)
+  }
+}
+```
+
+# **R code for Problem 5**
+
+`full_bayesian` takes as arguments the precision of the prior and generative distribution, as well as the Phi matrixes produced by `polynomial_model_constructor` as explained above to utilize the equations that provide the mean and variance of the predictive distribution for each row of the test set in `Phi_test`.
+
+```{r}
+full_bayesian <- function(a, b, Phi_train, y_train, Phi_test) {
+  # The Identity is an square matrix with rows and columns equal to the number of polynomial degrees + 1 for the bias term
+  I <- diag(ncol(Phi_train))
+  S <- solve(a*I + b*t(Phi_train) %*% Phi_train)
+  m_y <- array()
+  var_y <- array()
+  # For each test point, we calculate the mean and variance of the posterior distribution
+  for (i in 1:nrow(Phi_test)) {
+    m_y[i] <- b*t(Phi_test[i,]) %*% S %*% t(Phi_train) %*% y_train
+    var_y[i] <- 1/b + t(Phi_test[i,]) %*% S %*% Phi_test[i,]
+  }
+  return(data.frame(m_y = m_y, var_y = var_y))
+}
+```
+
+We create a for loop to use four different generating seeds `c(100,200,300,400)` for our training sample of 10 points. Then for each of the samples we create the same 1000 points of seed `42` and then calculate the mean and variance of the predictive distribution for each one of them. Finally we use ggplot to plot the results.
+
+```{r fig.width=8 , fig.height=6 , dpi=150}
+for (seed in c(100,200,300,400)){
+  set.seed(seed)
+  #generate training set
+  model_points_train <-  generate_model_points(10,evenly_spaced = FALSE)
+  Phi_train <- polynomial_model_constructor(model_points_train$X,9)
+  #generate test sets
+  set.seed(42)
+  model_points_test <-  generate_model_points(1000,evenly_spaced = FALSE)
+  model_points_test$X <- sort(model_points_test$X)
+  model_points_test$Y <- sort(model_points_test$Y)
+  Phi_test <- polynomial_model_constructor(model_points_test$X,9)
+  # Calculate the mean and variance of the predictive distribution for each test point
+  bayesian_stats <- full_bayesian(0.005,11.1,Phi_train, model_points_train$Y, Phi_test)
+  # Plot the true mode, training points, predictive distribution for the four generated training sets
+  figure <- ggplot() +
+  geom_line(data = model_points_train,aes(x = x, y = y, color = "True Model sin(2πx)"), size = 1.5
+  ) +
+  geom_line(data = bayesian_stats,aes(x = model_points_test$X, y = m_y, color = "Predictive distribution mean"), size = 1.5
+  ) +
+  geom_ribbon(data = bayesian_stats, aes(x = model_points_test$X, ymin = m_y - sqrt(var_y), ymax = m_y + sqrt(var_y), color = "Predictive distribution stdv, up to 2*σ"), fill = 'darkred',alpha = 0.3
+  )+
+  geom_ribbon(data = bayesian_stats, aes(x = model_points_test$X ,ymin = m_y - 2*sqrt(var_y), ymax = m_y + 2*sqrt(var_y), color = "Predictive distribution stdv, up to 2*σ"), fill = 'darkred',alpha = 0.3
+  )+
+  geom_point(data = model_points_train, 
+  aes(x = X, y = Y, color = "Training set"), size = 2.5
+  ) +
+  labs(x = "X", y = "Targets") +
+  ggtitle("Full Bayesian Regression, training set of N = 10 points") +
+  ylim(-3,3) +
+  xlim(0,1)
+  plot(figure)
+}
+```
