@@ -1,5 +1,5 @@
 Description:
-This repository contains two files, `Solutions_Notebook.ipynb` and `R_supplementary.Rmd`, 
+This repository contains two main files, `Solutions_Notebook.ipynb` and `R_supplementary.Rmd`, 
 that provide solutions to problems related to statistical fundamentals, linear regression and full Bayesian inference. 
 `Solutions_Notebook.ipynb` contains the full solution of both the mathematical proofs and the coding problems 
 with rigorous explanation and documentation, while `R_supplementary.Rmd` contains only the code and documentation 
